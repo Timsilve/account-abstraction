@@ -185,11 +185,6 @@ contract TestMinimalAccount is Test {
             payable(randomOwner)
         );
         vm.stopPrank();
-        // vm.prank(randomOwner);
-        // IEntryPoint(helperconfig.getConfig().entryPoint).handleOps(
-        //     ops,
-        //     payable(randomOwner)
-        // );
         //assert
         assertEq(usdc.balanceOf(address(minimalAccount)), AMOUNT);
     }
