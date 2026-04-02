@@ -83,7 +83,11 @@ contract TestMinimalAccount is Test {
         );
 
         PackedUserOperation memory PackedUserOp = sendPackedUserOp
-            .generateSignedUserOP(executeData, helperconfig.getConfig());
+            .generateSignedUserOP(
+                executeData,
+                helperconfig.getConfig(),
+                address(minimalAccount)
+            );
         bytes32 userOperationHash = IEntryPoint(
             helperconfig.getConfig().entryPoint
         ).getUserOpHash(PackedUserOp);
@@ -117,7 +121,11 @@ contract TestMinimalAccount is Test {
         );
 
         PackedUserOperation memory PackedUserOp = sendPackedUserOp
-            .generateSignedUserOP(executeData, helperconfig.getConfig());
+            .generateSignedUserOP(
+                executeData,
+                helperconfig.getConfig(),
+                address(minimalAccount)
+            );
         bytes32 userOperationHash = IEntryPoint(
             helperconfig.getConfig().entryPoint
         ).getUserOpHash(PackedUserOp);
@@ -133,5 +141,56 @@ contract TestMinimalAccount is Test {
         );
         // assert the returns
         assertEq(validationData, 0);
+    }
+
+    function testEntryPointUserCanExecute() public {
+        //Arrange
+        assertEq(usdc.balanceOf(address(minimalAccount)), 0);
+        address dest = address(usdc);
+        uint256 value = 0;
+        bytes memory functionData = abi.encodeWithSelector(
+            ERC20Mock.mint.selector,
+            address(minimalAccount),
+            AMOUNT
+        );
+        bytes memory executeData = abi.encodeWithSelector(
+            MinimalAccount.execute.selector,
+            dest,
+            value,
+            functionData
+        );
+
+        PackedUserOperation memory PackedUserOp = sendPackedUserOp
+            .generateSignedUserOP(
+                executeData,
+                helperconfig.getConfig(),
+                address(minimalAccount) //// hmmm
+            );
+        // bytes32 userOperationHash = IEntryPoint(
+        //     helperconfig.getConfig().entryPoint
+        // ).getUserOpHash(PackedUserOp);
+
+        vm.deal(address(minimalAccount), 1e18);
+
+        PackedUserOperation[] memory ops = new PackedUserOperation[](1);
+        ops[0] = PackedUserOp;
+
+        //act
+
+        address defaultTxOriginAddress = 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38;
+
+        vm.startPrank(defaultTxOriginAddress);
+        IEntryPoint(helperconfig.getConfig().entryPoint).handleOps(
+            ops,
+            payable(randomOwner)
+        );
+        vm.stopPrank();
+        // vm.prank(randomOwner);
+        // IEntryPoint(helperconfig.getConfig().entryPoint).handleOps(
+        //     ops,
+        //     payable(randomOwner)
+        // );
+        //assert
+        assertEq(usdc.balanceOf(address(minimalAccount)), AMOUNT);
     }
 }
