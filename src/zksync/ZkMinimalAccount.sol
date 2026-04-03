@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.24;
+pragma solidity 0.8.24;
 
 // zksync era imports
 import {IAccount, ACCOUNT_VALIDATION_SUCCESS_MAGIC} from "lib/foundry-era-contracts/src/system-contracts/contracts/interfaces/IAccount.sol";
@@ -26,6 +26,7 @@ contract ZkMinimalAccount is IAccount, Ownable {
     error ZkMinimalAccount__NotFromBootLoaderOrOwner();
     error ZKMinimalAccount__ExecutionFailed();
     error ZKMinimalAccount__FailedToPay();
+    error ZKMinimalAccount__InvalidSignature();
 
     /*//////////////////////////////////////////////////////////////
                                MODIFIERS
@@ -61,7 +62,7 @@ contract ZkMinimalAccount is IAccount, Ownable {
         bytes32 _suggestedSignedHash,
         Transaction memory _transaction
     ) external payable requireFromBootLoader returns (bytes4 magic) {
-        _validateTransaction(_transaction);
+        return _validateTransaction(_transaction);
     }
 
     function executeTransaction(
@@ -75,7 +76,10 @@ contract ZkMinimalAccount is IAccount, Ownable {
     function executeTransactionFromOutside(
         Transaction memory _transaction
     ) external payable {
-        _validateTransaction(_transaction);
+        bytes4 magic = _validateTransaction(_transaction);
+        if (magic != ACCOUNT_VALIDATION_SUCCESS_MAGIC) {
+            revert ZKMinimalAccount__InvalidSignature();
+        }
         _executeTransaction(_transaction);
     }
 
